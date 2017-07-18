@@ -1,0 +1,31 @@
+entity.dom_processor_stack.collection:
+  path: '/admin/config/content/dom-processors'
+  defaults:
+    _entity_list: 'dom_processor_stack'
+    _title: 'DOM Processor Stack Configuration'
+  requirements:
+    _permission: 'administer dom processors'
+
+entity.dom_processor_stack.add_form:
+  path: '/admin/config/content/dom-processors/add'
+  defaults:
+    _entity_form: 'dom_processor_stack.add'
+    _title: 'Add DOM Processor Stack'
+  requirements:
+    _permission: 'administer dom processors'
+
+entity.dom_processor_stack.edit_form:
+  path: '/admin/config/content/dom-processors/{dom_processor_stack}'
+  defaults:
+    _entity_form: 'dom_processor_stack.edit'
+    _title: 'Edit DOM Processor Stack'
+  requirements:
+    _permission: 'administer dom processors'
+
+entity.dom_processor_stack.delete_form:
+  path: '/admin/config/content/dom-processors/{dom_processor_stack}/delete'
+  defaults:
+    _entity_form: 'dom_processor_stack.delete'
+    _title: 'Delete DOM Processor Stack'
+  requirements:
+    _permission: 'administer dom processors'

@@ -1,0 +1,10 @@
+services:
+  dom_processor.dom_processor:
+    class: Drupal\dom_processor\DomProcessor
+    arguments: ['@plugin.manager.dom_processor.semantic_analyzer', '@plugin.manager.dom_processor.data_processor']
+  plugin.manager.dom_processor.semantic_analyzer:
+    class: Drupal\dom_processor\Plugin\dom_processor\PluginManager
+    arguments: [semantic_analyzer, '@container.namespaces', '@cache.discovery', '@module_handler']
+  plugin.manager.dom_processor.data_processor:
+    class: Drupal\dom_processor\Plugin\dom_processor\PluginManager
+    arguments: [data_processor, '@container.namespaces', '@cache.discovery', '@module_handler']

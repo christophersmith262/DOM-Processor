@@ -1,0 +1,6 @@
+name: DOM Processor
+description: Provides a processor to facilitate semantic analysis and data processing of HTML.
+package: Componentize
+
+type: module
+core: '8.x'

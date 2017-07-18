@@ -1,0 +1,5 @@
+entity.dom_processor_stack.add_form:
+  route_name: 'entity.dom_processor_stack.add_form'
+  title: 'Add DOM Processor Stack'
+  appears_on:
+    - entity.dom_processor_stack.collection

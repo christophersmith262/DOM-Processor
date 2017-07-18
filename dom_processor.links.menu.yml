@@ -1,0 +1,6 @@
+entity.dom_processor_stack.collection:
+  title: 'DOM Processors'
+  description: 'Configure DOM processor stacks for performaning DOM analysis and filtering.'
+  route_name: 'entity.dom_processor_stack.collection'
+  parent: system.admin_config_content
+  weight: 100

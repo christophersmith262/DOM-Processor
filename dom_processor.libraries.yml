@@ -1,0 +1,4 @@
+admin:
+  version: 1.x
+  js:
+    js/dom_processor.admin.js: {}
