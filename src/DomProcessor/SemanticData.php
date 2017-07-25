@@ -25,6 +25,13 @@ class SemanticData implements SemanticDataInterface {
     return NestedArray::getValue($data, $parents);
   }
 
+  public function has($name) {
+    $parents = explode('.', $name);
+    $data = $this->toArray();
+    NestedArray::getValue($data, $parents, $key_exists);
+    return $key_exists;
+  }
+
   public function is($candidate) {
     if ($candidate instanceof SemanticDataInterface) {
       return $this->node()->isSameNode($candidate->node());
@@ -44,7 +51,7 @@ class SemanticData implements SemanticDataInterface {
   }
 
   public function isRoot() {
-    return !!$this->parent();
+    return !$this->parent();
   }
 
   public function node() {
@@ -63,17 +70,18 @@ class SemanticData implements SemanticDataInterface {
     return static::create($node, $this->xpath, $this->data, $this);
   }
 
-  public function tag($tag_name, array $data, $deep_merge = FALSE) {
-    $data = [
-      $tag_name => $data,
-    ];
+  public function tag($tag_name, array $tag_data, $deep_merge = FALSE) {
+    $data = $this->toArray();
     if ($deep_merge) {
-      $data = NestedArray::mergeDeep($this->toArray(), $data);
+      $tag_data = [
+        $tag_name => $tag_data,
+      ];
+      NestedArray::mergeDeep($data, $tag_data);
     }
     else {
-      $data = array_merge_recursive($this->toArray(), $data);
+      $data[$tag_name] = $tag_data;
     }
-    return static::create($node, $this->xpath, $data, $this->parent());
+    return static::create($this->node(), $this->xpath, $data, $this->parent());
   }
 
   public function clear($keys) {
@@ -83,8 +91,18 @@ class SemanticData implements SemanticDataInterface {
     $data = $this->toArray();
     foreach ($keys as $key) {
       $parents = explode('.', $key);
-      $data = NestedArray::unsetValue($data, $parents);
+      NestedArray::unsetValue($data, $parents);
     }
     return static::create($this->node(), $this->xpath, $data, $this->parent());
+  }
+
+  public function getInnerHTML() {
+    $inner_html = '';
+    if ($this->node()->hasChildNodes()) {
+      foreach ($this->node()->childNodes as $child_node) {
+        $inner_html .= $this->node()->ownerDocument->saveHTML($child_node);
+      }
+    }
+    return $inner_html;
   }
 }

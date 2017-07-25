@@ -8,6 +8,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\dom_processor\DomProcessor\DomProcessorInterface;
+use Drupal\dom_processor\DomProcessor\DomProcessorResult;
 use Drupal\filter\FilterProcessResult;
 use Drupal\filter\Plugin\FilterBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -56,7 +57,7 @@ class DomProcessorFilter extends FilterBase implements ContainerFactoryPluginInt
     ]);
     foreach ($this->getConfiguration()['settings'] as $id => $variant) {
       $stack = $this->stackStorage->load($id);
-      $result->merge($this->domProcessor->process($result->get('markup'), $stack, $variant, [
+      $result = $result->merge($this->domProcessor->process($result->get('markup'), $stack, $variant, [
         'langcode' => $langcode,
       ]));
     }
