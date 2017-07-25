@@ -9,6 +9,7 @@ class DomProcessorResult implements DomProcessorResultInterface {
 
   protected $data;
   protected $reprocess = FALSE;
+  protected $reprocessData = NULL;
 
   public function __construct(array $data) {
     $this->data = $data;
@@ -48,8 +49,13 @@ class DomProcessorResult implements DomProcessorResultInterface {
     return $this->reprocess;
   }
 
-  public function reprocess($status = TRUE) {
-    $this->reprocess = $status;
+  public function reprocessData() {
+    return $this->reprocessData;
+  }
+
+  public function reprocess(SemanticDataInterface $data = NULL) {
+    $this->reprocess = TRUE;
+    $this->reprocessData = $data;
     return $this;
   }
 
@@ -74,7 +80,7 @@ class DomProcessorResult implements DomProcessorResultInterface {
 
   public function setInnerHtml(SemanticDataInterface $data, $markup) {
     // Remove existing children.
-    if ($data->node()->hasChildren()) {
+    if ($data->node()->hasChildNodes()) {
       foreach ($data->node()->childNodes as $child_node) {
         $data->node()->removeChild($child_node);
       }
@@ -87,7 +93,7 @@ class DomProcessorResult implements DomProcessorResultInterface {
     $body_node = $body_nodes->item(0);
     if ($body_node->hasChildNodes()) {
       foreach ($body_node->childNodes as $child_node) {
-        $child_node = $data->node()->ownerDocument->importNode($child_node);
+        $child_node = $data->node()->ownerDocument->importNode($child_node, TRUE);
         $data->node()->appendChild($child_node);
       }
     }

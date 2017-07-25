@@ -63,7 +63,8 @@ class DomProcessor implements DomProcessorInterface {
 
     $result = $this->applyProcessors($data, $result, $plugins);
     if ($result->needsReprocess()) {
-      $result = $this->applyPlugins($original_data, $plugins);
+      $data = $result->reprocessData() ? $result->reprocessData() : $original_data;
+      $result = $this->applyPlugins($data, $plugins);
     }
     return $result;
   }
@@ -81,6 +82,9 @@ class DomProcessor implements DomProcessorInterface {
     foreach ($plugins['analyzer'] as $plugin) {
       try {
         $data = $plugin->analyze($data);
+        if (!$data instanceof SemanticDataInterface) {
+          throw new \Exception('Data analyzer returned an invalid value');
+        }
       }
       catch (DomProcessorWarning $e) {
         $data = $data->tag('warning', [
@@ -92,8 +96,15 @@ class DomProcessor implements DomProcessorInterface {
   }
 
   protected function applyProcessors(SemanticDataInterface $data, DomProcessorResultInterface $result, array $plugins) {
-    foreach ($plugins['processor'] as $plugin) {
-      $result = $result->merge($plugin->process($data, $result));
+    foreach ($plugins['processor'] as $plugin_name => $plugin) {
+      $plugin_result = $plugin->process($data, $result);
+      if (!$plugin_result instanceof DomProcessorResultInterface) {
+        throw new \Exception('Data processor "' . $plugin_name . '" returned an invalid value');
+      }
+      if ($plugin_result->needsReprocess()) {
+        return $plugin_result;
+      }
+      $result = $result->merge($plugin_result);
     }
     return $result;
   }

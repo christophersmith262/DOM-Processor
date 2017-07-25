@@ -70,15 +70,21 @@ class SemanticData implements SemanticDataInterface {
     return static::create($node, $this->xpath, $this->data, $this);
   }
 
-  public function tag($tag_name, array $tag_data, $deep_merge = FALSE) {
-    $data = $this->toArray();
-    if ($deep_merge) {
-      $tag_data = [
-        $tag_name => $tag_data,
-      ];
-      NestedArray::mergeDeep($data, $tag_data);
+  public function tag($tag_name, $tag_data, $deep_merge = FALSE) {
+    if (is_array($tag_data)) {
+      $data = $this->toArray();
+      if ($deep_merge) {
+        $tag_data = [
+          $tag_name => $tag_data,
+        ];
+        $data = NestedArray::mergeDeep($data, $tag_data);
+      }
+      else {
+        $data[$tag_name] = $tag_data;
+      }
     }
     else {
+      $data = $this->toArray();
       $data[$tag_name] = $tag_data;
     }
     return static::create($this->node(), $this->xpath, $data, $this->parent());
