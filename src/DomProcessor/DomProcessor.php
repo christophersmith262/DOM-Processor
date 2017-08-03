@@ -11,11 +11,20 @@ class DomProcessor implements DomProcessorInterface {
 
   protected $storage;
   protected $pluginManagers = [];
+  protected $data = [];
 
   public function __construct(EntityTypeManagerInterface $entity_type_manager, PluginManagerInterface $analyzer_plugin_manager, PluginManagerInterface $processor_plugin_manager) {
     $this->storage = $entity_type_manager->getStorage('dom_processor_stack');
     $this->pluginManagers['analyzer'] = $analyzer_plugin_manager;
     $this->pluginManagers['processor'] = $processor_plugin_manager;
+  }
+
+  public function prepare(array $data) {
+    array_push($this->data, $data);
+  }
+
+  public function prepared() {
+    return !!$this->data;
   }
 
   public function process($markup, $processor_stack, $variant_name = 'default', array $data = []) {
@@ -31,41 +40,75 @@ class DomProcessor implements DomProcessorInterface {
     $body_nodes = $xpath->query('//body');
     $body_node = $body_nodes->item(0);
 
+    // Fill the initial data for the processor.
     $data = $this->createData($body_node, $xpath, $data);
+    if ($this->prepared()) {
+      $merge_data = end($this->data);
+      foreach ($merge_data as $key => $value) {
+        $data = $data->tag($key, $value);
+      }
+    }
+
     $result = $this->applyPlugins($data, $plugins);
     $result = $result->merge([
       'markup' => Html::serialize($document)
     ]);
+
+    array_pop($this->data);
     return $result;
   }
 
   protected function applyPlugins(SemanticDataInterface $data, array $plugins) {
-    $original_data = $data;
+    $node_stack = [];
+    $data_stack = [];
+    array_push($node_stack, $data);
     $result = $this->createResult();
+    $counter = 0;
 
-    try {
-      $data = $this->applyAnalyzers($data, $plugins);
+    while ($node_stack || $data_stack) {
 
-      if ($data->node()->hasChildNodes()) {
-        foreach ($data->node()->childNodes as $child_node) {
-          $result->merge($this->applyPlugins($data->push($child_node), $plugins));
+      if ($node_stack) {
+        while($data = array_pop($node_stack)) {
+          try {
+            $data = $this->applyAnalyzers($data, $plugins);
+            array_push($data_stack, $data);
+          }
+          catch (DomProcessorError $e) {
+            if (!$data->isRoot()) {
+              $data->node()->parentNode->removeChild($data->node());
+            }
+            $data = $data->tag('error', [
+              'exception' => $e,
+            ]);
+          }
+
+          if ($data->node()->hasChildNodes()) {
+            $child_nodes = $data->node()->childNodes;
+            for ($i = $child_nodes->length - 1; $i >= 0; $i--) {
+              array_push($node_stack, $data->push($child_nodes->item($i)));
+            }
+          }
+        }
+      }
+
+      if ($data_stack) {
+        while($data = array_pop($data_stack)) {
+          $next_result = $this->applyProcessors($data, $result, $plugins);
+
+          if ($next_result->needsReprocess()) {
+            if ($next_result->reprocessData()) {
+              $data = $next_result->reprocessData();
+            }
+            array_push($node_stack, $data);
+            break;
+          }
+          else {
+            $result = $next_result;
+          }
         }
       }
     }
-    catch (DomProcessorError $e) {
-      if (!$data->isRoot()) {
-        $data->node()->parentNode->removeChild($data->node());
-      }
-      $data = $data->tag('error', [
-        'exception' => $e,
-      ]);
-    }
 
-    $result = $this->applyProcessors($data, $result, $plugins);
-    if ($result->needsReprocess()) {
-      $data = $result->reprocessData() ? $result->reprocessData() : $original_data;
-      $result = $this->applyPlugins($data, $plugins);
-    }
     return $result;
   }
 
@@ -97,14 +140,13 @@ class DomProcessor implements DomProcessorInterface {
 
   protected function applyProcessors(SemanticDataInterface $data, DomProcessorResultInterface $result, array $plugins) {
     foreach ($plugins['processor'] as $plugin_name => $plugin) {
-      $plugin_result = $plugin->process($data, $result);
-      if (!$plugin_result instanceof DomProcessorResultInterface) {
+      $result = $plugin->process($data, $result);
+      if (!$result instanceof DomProcessorResultInterface) {
         throw new \Exception('Data processor "' . $plugin_name . '" returned an invalid value');
       }
-      if ($plugin_result->needsReprocess()) {
-        return $plugin_result;
+      if ($result->needsReprocess()) {
+        return $result;
       }
-      $result = $result->merge($plugin_result);
     }
     return $result;
   }

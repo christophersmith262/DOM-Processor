@@ -52,7 +52,7 @@ class DomProcessorFilter extends FilterBase implements ContainerFactoryPluginInt
    * {@inheritdoc}
    */
   public function process($text, $langcode) {
-    $result = new DomProcessorResult([
+    $result = DomProcessorResult::create([
       'markup' => $text,
     ]);
     foreach ($this->getConfiguration()['settings'] as $id => $variant) {

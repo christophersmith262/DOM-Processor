@@ -3,6 +3,7 @@
 namespace Drupal\Tests\dom_processor\Unit;
 
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\dom_processor\DomProcessorStackInterface;
 use Drupal\dom_processor\DomProcessor\SemanticDataInterface;
@@ -66,6 +67,20 @@ class TestProcessor implements DataProcessorInterface {
   }
 }
 
+class ReprocessTestProcessor extends TestProcessor {
+
+  public function process(SemanticDataInterface $data, DomProcessorResultInterface $result) {
+    $result = parent::process($data, $result);
+    if ($data->node() instanceof \DOMElement) {
+      if (!$data->node()->getAttribute('data-reprocessed')) {
+        $data->node()->setAttribute('data-reprocessed', 'true');
+        $result = $result->reprocess();
+      }
+    }
+    return $result;
+  }
+}
+
 /**
  * @coversDefaultClass Drupal\dom_processor\DomProcessor\DomProcessor
  *
@@ -91,10 +106,10 @@ class DomProcessorUnitTest extends UnitTestCase {
     $prophecy->getAnalyzers()->willReturn($analyzers);
 
     $variant = [
-      'processor' => [],
+      'processors' => [],
     ];
-    foreach ($plugins['processor'] as $id => $info) {
-      $variant['processor'][$id] = $info['config'];
+    foreach ($plugins['processors'] as $id => $info) {
+      $variant['processors'][$id] = $info['config'];
     }
     $prophecy->getVariant('default')->willReturn($variant);
 
@@ -102,13 +117,20 @@ class DomProcessorUnitTest extends UnitTestCase {
   }
 
   protected function createProcessor(array $plugins) {
+    $prophecy = $this->prophesize(EntityTypeManagerInterface::CLASS);
     $analyzer_plugin_manager = $this->createPluginManager($plugins['analyzer']);
-    $processor_plugin_manager = $this->createPluginManager($plugins['processor']);
-    $processor = new DomProcessor($analyzer_plugin_manager, $processor_plugin_manager);
+    $processor_plugin_manager = $this->createPluginManager($plugins['processors']);
+    $processor = new DomProcessor($prophecy->reveal(), $analyzer_plugin_manager, $processor_plugin_manager);
     return $processor;
   }
 
-  protected function createTestCase($input, $output = NULL, array $data = []) {
+  protected function createTestCase($input, $output = NULL, array $data = [], $plugin_types = []) {
+    if (empty($plugin_types['analyzer'])) {
+      $plugin_types['analyzer'] = 'Drupal\Tests\dom_processor\Unit\TestAnalyzer';
+    }
+    if (empty($plugin_types['processor'])) {
+      $plugin_types['processor'] = 'Drupal\Tests\dom_processor\Unit\TestProcessor';
+    }
     if (!isset($output)) {
       $output = $input;
     }
@@ -120,14 +142,14 @@ class DomProcessorUnitTest extends UnitTestCase {
           'test_analyzer' => [
             'config' => [
             ],
-            'instance' => new TestAnalyzer($input),
+            'instance' => new $plugin_types['analyzer']($input),
           ],
         ],
-        'processor' => [
+        'processors' => [
           'test_processor' => [
             'config' => [
             ],
-            'instance' => new TestProcessor($input),
+            'instance' => new $plugin_types['processor']($input),
           ],
         ],
       ],

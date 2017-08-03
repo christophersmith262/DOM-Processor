@@ -7,8 +7,13 @@ use Symfony\Component\CssSelector\CssSelectorConverter;
 
 class SemanticData implements SemanticDataInterface {
 
+  static protected $cachedConverter = NULL;
+
   public function __construct(\DOMNode $node, \DOMXpath $xpath, array $data, SemanticDataInterface $parent = NULL) {
-    $this->converter = new CssSelectorConverter();
+    if (!static::$cachedConverter) {
+      static::$cachedConverter = new CssSelectorConverter();
+    }
+    $this->converter = static::$cachedConverter;
     $this->node = $node;
     $this->xpath = $xpath;
     $this->data = $data;

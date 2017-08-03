@@ -11,12 +11,14 @@ class DomProcessorResult implements DomProcessorResultInterface {
   protected $reprocess = FALSE;
   protected $reprocessData = NULL;
 
-  public function __construct(array $data) {
+  public function __construct(array $data, $reprocess, $reprocess_data) {
     $this->data = $data;
+    $this->reprocess = $reprocess;
+    $this->reprocessData = $reprocess_data;
   }
 
-  public static function create(array $data = []) {
-    return new static($data);
+  public static function create(array $data = [], $reprocess = FALSE, $reprocess_data = NULL) {
+    return new static($data, $reprocess, $reprocess_data);
   }
 
   public function get($name = NULL) {
@@ -45,6 +47,18 @@ class DomProcessorResult implements DomProcessorResultInterface {
     return self::create($data);
   }
 
+  public function clear($keys) {
+    if (!is_array($keys)) {
+      $keys = [$keys];
+    }
+    $data = $this->toArray();
+    foreach ($keys as $key) {
+      $parents = explode('.', $key);
+      NestedArray::unsetValue($data, $parents);
+    }
+    return self::create($data);
+  }
+
   public function needsReprocess() {
     return $this->reprocess;
   }
@@ -54,9 +68,7 @@ class DomProcessorResult implements DomProcessorResultInterface {
   }
 
   public function reprocess(SemanticDataInterface $data = NULL) {
-    $this->reprocess = TRUE;
-    $this->reprocessData = $data;
-    return $this;
+    return static::create($this->toArray(), TRUE, $data);
   }
 
   public function replaceWithHtml(SemanticDataInterface $data, $markup) {
@@ -75,7 +87,7 @@ class DomProcessorResult implements DomProcessorResultInterface {
     // Remove existing node.
     $data->node()->parentNode->removeChild($data->node());
 
-    return $this->reprocess();
+    return $this->reprocess($data->parent());
   }
 
   public function setInnerHtml(SemanticDataInterface $data, $markup) {
