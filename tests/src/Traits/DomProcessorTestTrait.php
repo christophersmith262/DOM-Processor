@@ -19,7 +19,7 @@ trait DomProcessorTestTrait {
     $document = Html::load($markup);
     $xpath = new \DOMXpath($document);
     $selector = $this->cssConverter->toXPath($selector);
-    $node = $xpath->query($selector)[0];
+    $node = $xpath->query($selector)->item(0);
 
     return SemanticData::create($node, $xpath, $data);
   }
