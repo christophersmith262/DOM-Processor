@@ -21,7 +21,24 @@ trait DomProcessorTestTrait {
     $selector = $this->cssConverter->toXPath($selector);
     $node = $xpath->query($selector)->item(0);
 
-    return SemanticData::create($node, $xpath, $data);
+    $nodes = [];
+    while ($node) {
+      $nodes[] = $node;
+
+      if (strtolower($node->tagName) == 'body') {
+        break;
+      }
+
+      $node = $node->parentNode;
+    }
+
+    $current = NULL;
+    while ($nodes) {
+      $node = array_pop($nodes);
+      $current = SemanticData::create($node, $xpath, $data, $current);
+    }
+
+    return $current;
   }
 
   protected function createDomProcessorResult($data = []) {
