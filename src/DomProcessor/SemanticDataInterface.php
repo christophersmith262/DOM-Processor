@@ -12,5 +12,5 @@ interface SemanticDataInterface {
   public function parent();
   public function toArray();
   public function push(\DOMNode $node);
-  public function tag($tag_name, $tag_data, $deep_merge);
+  public function tag($tag_name, $tag_data, $deep_merge = FALSE);
 }
