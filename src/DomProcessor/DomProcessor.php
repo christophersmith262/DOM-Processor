@@ -19,12 +19,8 @@ class DomProcessor implements DomProcessorInterface {
     $this->pluginManagers['processor'] = $processor_plugin_manager;
   }
 
-  public function prepare(array $data) {
+  public function pushExecutionFrame(array $data) {
     array_push($this->data, $data);
-  }
-
-  public function prepared() {
-    return !!$this->data;
   }
 
   public function process($markup, $processor_stack, $variant_name = 'default', array $data = []) {
@@ -42,7 +38,7 @@ class DomProcessor implements DomProcessorInterface {
 
     // Fill the initial data for the processor.
     $data = $this->createData($body_node, $xpath, $data);
-    if ($this->prepared()) {
+    if (!empty($this->data)) {
       $merge_data = end($this->data);
       foreach ($merge_data as $key => $value) {
         $data = $data->tag($key, $value);
